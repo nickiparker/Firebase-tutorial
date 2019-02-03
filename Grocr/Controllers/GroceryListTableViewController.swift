@@ -35,6 +35,7 @@ class GroceryListTableViewController: UITableViewController {
   let listToUsers = "ListToUsers"
   
   // MARK: Properties
+  let ref = Database.database().reference(withPath: "grocery-items")
   var items: [GroceryItem] = []
   var user: User!
   var userCountBarButtonItem: UIBarButtonItem!
@@ -114,32 +115,39 @@ class GroceryListTableViewController: UITableViewController {
   
   // MARK: Add Item
   
-  @IBAction func addButtonDidTouch(_ sender: AnyObject) {
-    let alert = UIAlertController(title: "Grocery Item",
-                                  message: "Add an Item",
-                                  preferredStyle: .alert)
-    
-    let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
-      let textField = alert.textFields![0]
-      
-      let groceryItem = GroceryItem(name: textField.text!,
-                                    addedByUser: self.user.email,
-                                    completed: false)
-      
-      self.items.append(groceryItem)
-      self.tableView.reloadData()
+    @IBAction func addButtonDidTouch(_ sender: AnyObject) {
+        let alert = UIAlertController(title: "Grocery Item",
+                                      message: "Add an Item",
+                                      preferredStyle: .alert)
+        
+        let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
+ 
+            // 1 - Get the text field, and its text, from the alert controller
+            guard let textField = alert.textFields?.first,
+                let text = textField.text else { return }
+            
+            // 2 - Using the current user’s data, create a new, uuncompleted GroceryItem
+            let groceryItem = GroceryItem(name: text,
+                                          addedByUser: self.user.email,
+                                          completed: false)
+ 
+            // 3 - Create a child reference using child(_:). The key value of this reference is the item’s name in lowercase
+            let groceryItemRef = self.ref.child(text.lowercased())
+   
+            // 4 - Use setValue(_:) to save data to the database. This method expects a Dictionary
+            groceryItemRef.setValue(groceryItem.toAnyObject())
+        }
+        
+        let cancelAction = UIAlertAction(title: "Cancel",
+                                         style: .cancel)
+        
+        alert.addTextField()
+        
+        alert.addAction(saveAction)
+        alert.addAction(cancelAction)
+        
+        present(alert, animated: true, completion: nil)
     }
-    
-    let cancelAction = UIAlertAction(title: "Cancel",
-                                     style: .cancel)
-    
-    alert.addTextField()
-    
-    alert.addAction(saveAction)
-    alert.addAction(cancelAction)
-    
-    present(alert, animated: true, completion: nil)
-  }
   
   @objc func userCountButtonDidTouch() {
     performSegue(withIdentifier: listToUsers, sender: nil)

@@ -60,6 +60,27 @@ class GroceryListTableViewController: UITableViewController {
     navigationItem.leftBarButtonItem = userCountBarButtonItem
     
     user = User(uid: "FakeId", email: "hungry@person.food")
+    // 1 - Attach a listener to receive updates whenever the grocery-items endpoint is modified
+    ref.observe(.value, with: { snapshot in
+
+      // 2 - Store the latest version of the data in a local variable inside the listener’s closure
+      var newItems: [GroceryItem] = []
+        
+      // 3 - The listener’s closure returns a snapshot of the latest set of data. Using children, you loop through the grocery items
+      for child in snapshot.children {
+ 
+        // 4 - After creating an instance of GroceryItem, it’s added it to the array that contains the latest version of the data
+        if let snapshot = child as? DataSnapshot,
+           let groceryItem = GroceryItem(snapshot: snapshot) {
+                newItems.append(groceryItem)
+          }
+        }
+        
+      // 5 - Replace items with the latest version of the data, then reload the table view so it displays the latest version
+      self.items = newItems
+      self.tableView.reloadData()
+    })
+
   }
   
   // MARK: UITableView Delegate methods
@@ -84,10 +105,11 @@ class GroceryListTableViewController: UITableViewController {
     return true
   }
   
+// Removes items from the list AND database
   override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
     if editingStyle == .delete {
-      items.remove(at: indexPath.row)
-      tableView.reloadData()
+        let groceryItem = items[indexPath.row]
+        groceryItem.ref?.removeValue()
     }
   }
   

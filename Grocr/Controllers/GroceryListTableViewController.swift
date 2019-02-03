@@ -60,8 +60,8 @@ class GroceryListTableViewController: UITableViewController {
     navigationItem.leftBarButtonItem = userCountBarButtonItem
     
     user = User(uid: "FakeId", email: "hungry@person.food")
-    // 1 - Attach a listener to receive updates whenever the grocery-items endpoint is modified
-    ref.observe(.value, with: { snapshot in
+    // 1 - Attach a listener to receive updates whenever the grocery-items endpoint is modified. queryOrdered(byChild:) returns a reference that informs the server to return data in an ordered fashion
+    ref.queryOrdered(byChild: "completed").observe(.value, with: { snapshot in
 
       // 2 - Store the latest version of the data in a local variable inside the listener’s closure
       var newItems: [GroceryItem] = []
@@ -114,13 +114,23 @@ class GroceryListTableViewController: UITableViewController {
   }
   
   override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+
+    // 1 - Find the cell the user tapped using cellForRow(at:)
     guard let cell = tableView.cellForRow(at: indexPath) else { return }
-    var groceryItem = items[indexPath.row]
+
+    // 2 - Get the corresponding GroceryItem by using the index path’s row
+    let groceryItem = items[indexPath.row]
+ 
+    // 3 - Negate completed on the grocery item to toggle the status
     let toggledCompletion = !groceryItem.completed
-    
+ 
+    // 4 - Call toggleCellCheckbox(_:isCompleted:) to update the visual properties of the cell
     toggleCellCheckbox(cell, isCompleted: toggledCompletion)
-    groceryItem.completed = toggledCompletion
-    tableView.reloadData()
+
+    // 5 - Use updateChildValues(_:), passing a dictionary, to update Firebase
+    groceryItem.ref?.updateChildValues([
+        "completed": toggledCompletion
+        ])
   }
   
   func toggleCellCheckbox(_ cell: UITableViewCell, isCompleted: Bool) {

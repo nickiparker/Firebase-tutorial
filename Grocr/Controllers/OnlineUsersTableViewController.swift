@@ -35,16 +35,43 @@ class OnlineUsersTableViewController: UITableViewController {
   let userCell = "UserCell"
   
   // MARK: Properties
+    // - Displays a list of online users
+  let usersRef = Database.database().reference(withPath: "online")
+
   var currentUsers: [String] = []
   
   override var preferredStatusBarStyle: UIStatusBarStyle {
     return .lightContent
+
   }
   
   // MARK: UIViewController Lifecycle
   override func viewDidLoad() {
     super.viewDidLoad()
-    currentUsers.append("hungry@person.food")
+    // 1 - Create an observer that listens for children added to the location managed by usersRef
+    usersRef.observe(.childAdded, with: { snap in
+        // 2 - Take the value from the snapshot, and then append it to the local array
+        guard let email = snap.value as? String else { return }
+        self.currentUsers.append(email)
+        // 3 - The current row is always the count of the local array minus one
+        let row = self.currentUsers.count - 1
+        // 4 - Create an instance NSIndexPath using the calculated row index
+        let indexPath = IndexPath(row: row, section: 0)
+        // 5 - Insert the row using an animation that causes the cell to be inserted from the top
+        self.tableView.insertRows(at: [indexPath], with: .top)
+        
+        // - It searches the local array for the email value to find the corresponding child item, and once located, it deletes the associated row from the table
+        self.usersRef.observe(.childRemoved, with: { snap in
+        guard let emailToFind = snap.value as? String else { return }
+        for (index, email) in self.currentUsers.enumerated() {
+            if email == emailToFind {
+                let indexPath = IndexPath(row: index, section: 0)
+                self.currentUsers.remove(at: index)
+                self.tableView.deleteRows(at: [indexPath], with: .fade)
+              }
+            }
+        })
+    })
   }
   
   // MARK: UITableView Delegate methods

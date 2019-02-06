@@ -81,6 +81,12 @@ class GroceryListTableViewController: UITableViewController {
       self.tableView.reloadData()
     })
 
+    // Here you attach an authentication observer to the Firebase auth object, which in turn assigns the user property when a user successfully signs in.
+    Auth.auth().addStateDidChangeListener { auth, user in
+        guard let user = user else { return }
+        self.user = User(authData: user)
+    }
+
   }
   
   // MARK: UITableView Delegate methods

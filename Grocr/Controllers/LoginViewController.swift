@@ -42,9 +42,47 @@ class LoginViewController: UIViewController {
     return .lightContent
   }
   
-  // MARK: Actions
+  override func viewDidLoad() {
+    super.viewDidLoad()
+        
+    // 1 - Create an authentication observer. The block is passed two parameters: auth and user.
+    Auth.auth().addStateDidChangeListener() { auth, user in
+
+        // 2 - Test the value of user. Upon successful user authentication, user is populated with the user’s information. If authentication fails, the variable is nil.
+        if user != nil {
+
+            // 3 - On successful authentication, perform the segue and clear the text fields’ text
+            self.performSegue(withIdentifier: self.loginToList, sender: nil)
+            self.textFieldLoginEmail.text = nil
+            self.textFieldLoginPassword.text = nil
+        }
+     }
+  }
+
+
+  
+  // MARK: Actions - This code will authenticate the user when they attempt to log in by tapping the Login button
   @IBAction func loginDidTouch(_ sender: AnyObject) {
-    performSegue(withIdentifier: loginToList, sender: nil)
+    guard
+        let email = textFieldLoginEmail.text,
+        let password = textFieldLoginPassword.text,
+        email.count > 0,
+        password.count > 0
+        else {
+            return
+    }
+    
+    Auth.auth().signIn(withEmail: email, password: password) { user, error in
+        if let error = error, user == nil {
+            let alert = UIAlertController(title: "Sign In Failed",
+                                          message: error.localizedDescription,
+                                          preferredStyle: .alert)
+            
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            
+            self.present(alert, animated: true, completion: nil)
+        }
+    }
   }
   
   @IBAction func signUpDidTouch(_ sender: AnyObject) {
@@ -53,6 +91,19 @@ class LoginViewController: UIViewController {
                                   preferredStyle: .alert)
     
     let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
+        // 1 - Get the email and password as supplied by the user from the alert controller
+        let emailField = alert.textFields![0]
+        let passwordField = alert.textFields![1]
+        
+        // 2 - Call createUser(withEmail:password:) on the default Firebase auth object passing the email and password
+        Auth.auth().createUser(withEmail: emailField.text!, password: passwordField.text!) { user, error in
+            if error == nil {
+ 
+                // 3 - If there are no errors, the user account has been created
+                Auth.auth().signIn(withEmail: self.textFieldLoginEmail.text!,
+                                   password: self.textFieldLoginPassword.text!)
+            }
+        }
     }
     
     let cancelAction = UIAlertAction(title: "Cancel",

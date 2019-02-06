@@ -60,9 +60,29 @@ class OnlineUsersTableViewController: UITableViewController {
     return cell
   }
   
-  // MARK: Actions
+  // MARK: Actions - To logout of app
   
   @IBAction func signoutButtonPressed(_ sender: AnyObject) {
-    dismiss(animated: true, completion: nil)
+    // 1 - You first get the currentUser and create onlineRef using its uid, which is a unique identifier representing the user
+    let user = Auth.auth().currentUser!
+    let onlineRef = Database.database().reference(withPath: "online/\(user.uid)")
+    
+    // 2 - You call removeValue to delete the value for onlineRef. While Firebase automatically adds the user to online upon sign in, it does not remove the user on sign out. Instead, it only removes users when they become disconnected
+    onlineRef.removeValue { (error, _) in
+        
+        // 3 - Within the completion closure, you first check if there’s an error and simply print it if so
+        if let error = error {
+            print("Removing online failed: \(error)")
+            return
+        }
+        
+        // 4 - You here call Auth.auth().signOut() to remove the user’s credentials from the keychain. If there isn’t an error, you dismiss the view controller. 
+        do {
+            try Auth.auth().signOut()
+            self.dismiss(animated: true, completion: nil)
+        } catch (let error) {
+            print("Auth sign out failed: \(error)")
+        }
+    }
   }
 }
